@@ -1,0 +1,13 @@
+node_modules/
+dist/
+data/projects/*.json
+data/thumbs/
+maps/*
+!maps/.gitkeep
+!maps/archive/
+!maps/archive/.gitkeep
+// Échantillon original livré avec WMM pour la prise en main.
+!maps/Bois — exemple.png
+.env
+.DS_Store
+*.log
