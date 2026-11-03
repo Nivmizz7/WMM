@@ -26,6 +26,13 @@ export const MAP_FONTS: readonly MapFont[] = [
     source: '/fonts/Brunson.ttf',
   },
   {
+    family: 'Impact',
+    label: 'Impact',
+    stack: '"Impact", "Arial Narrow", sans-serif',
+    weight: 400,
+    source: '/fonts/Impact.ttf',
+  },
+  {
     family: 'IBM Plex Mono',
     label: 'IBM Plex Mono',
     stack: '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',

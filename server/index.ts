@@ -16,7 +16,7 @@ const PORT = Number(process.env.PORT ?? 4310)
 const PROJECT_IMPORT_ENABLED = process.env.WMM_IMPORT_ENABLED === 'true'
 const SUPPORTED_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp'])
 const SUPPORTED_PROJECT_EXTENSION = '.wmm'
-const SUPPORTED_FONT_FAMILIES = new Set(['IBM Plex Sans', 'Brunson', 'IBM Plex Mono'])
+const SUPPORTED_FONT_FAMILIES = new Set(['IBM Plex Sans', 'Brunson', 'Impact', 'IBM Plex Mono'])
 
 await Promise.all([
   fs.mkdir(MAPS_DIR, { recursive: true }),
@@ -67,6 +67,7 @@ type StoredAnnotation = {
   text?: string
   fontSize?: number
   fontFamily?: string
+  textAlign?: 'left' | 'center' | 'right'
 }
 
 type StoredProject = {
@@ -268,6 +269,8 @@ function validateAnnotations(value: unknown): StoredAnnotation[] {
         typeof item.fontFamily === 'string' && SUPPORTED_FONT_FAMILIES.has(item.fontFamily)
           ? item.fontFamily
           : 'IBM Plex Sans'
+      annotation.textAlign =
+        item.textAlign === 'center' || item.textAlign === 'right' ? item.textAlign : 'left'
     }
 
     return annotation

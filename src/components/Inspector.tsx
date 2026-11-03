@@ -12,8 +12,11 @@ import {
   Square,
   Trash2,
   Type,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
 } from 'lucide-react'
-import type { Annotation, DrawingStyle, FontFamily, MapSummary } from '../lib/types'
+import type { Annotation, DrawingStyle, FontFamily, MapSummary, TextAlign } from '../lib/types'
 import { COLORS } from '../lib/types'
 import { MAP_FONTS, mapFont, normalizeFontFamily } from '../lib/fonts'
 import { useI18n } from '../lib/i18n'
@@ -135,6 +138,43 @@ function FontControl({
         </span>
       </span>
     </label>
+  )
+}
+
+function TextAlignControl({
+  value,
+  onChange,
+}: {
+  value: TextAlign
+  onChange: (value: TextAlign) => void
+}) {
+  const { t } = useI18n()
+  const options: Array<{ value: TextAlign; label: string; icon: typeof AlignLeft }> = [
+    { value: 'left', label: t('inspector.alignLeft'), icon: AlignLeft },
+    { value: 'center', label: t('inspector.alignCenter'), icon: AlignCenter },
+    { value: 'right', label: t('inspector.alignRight'), icon: AlignRight },
+  ]
+  return (
+    <div className="form-field">
+      <span className="field-label">{t('inspector.alignment')}</span>
+      <div className="alignment-buttons" role="group" aria-label={t('inspector.alignment')}>
+        {options.map((option) => {
+          const Icon = option.icon
+          return (
+            <button
+              key={option.value}
+              type="button"
+              className={value === option.value ? 'is-active' : ''}
+              onClick={() => onChange(option.value)}
+              aria-label={option.label}
+              title={option.label}
+            >
+              <Icon size={15} />
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -447,6 +487,10 @@ export function Inspector({
                   label={t('inspector.font')}
                   value={mapFont(single.fontFamily).family}
                   onChange={handleFontFamily}
+                />
+                <TextAlignControl
+                  value={single.textAlign ?? 'left'}
+                  onChange={(textAlign) => onUpdateSelection({ textAlign }, `align-${single.id}`)}
                 />
                 <SliderField
                   label={t('inspector.textSize')}

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -105,6 +106,44 @@ function textSize(annotation: Annotation) {
   }
 }
 
+function textAnchor(annotation: Annotation): 'start' | 'middle' | 'end' {
+  if (annotation.textAlign === 'center') return 'middle'
+  if (annotation.textAlign === 'right') return 'end'
+  return 'start'
+}
+
+function textOrigin(annotation: Annotation, width: number): number {
+  if (annotation.textAlign === 'center') return annotation.x + width / 2
+  if (annotation.textAlign === 'right') return annotation.x + width
+  return annotation.x
+}
+
+function resizeTextAnnotation(
+  source: Annotation,
+  handle: Handle,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): Partial<Annotation> {
+  const original = textSize(source)
+  const widthScale = (right - left) / Math.max(original.width, MIN_BOX)
+  const heightScale = (bottom - top) / Math.max(original.height, MIN_BOX)
+  const scale = handle.length === 2 ? Math.min(widthScale, heightScale) : handle.includes('e') || handle.includes('w') ? widthScale : heightScale
+  const fontSize = Math.max(8, Math.round((source.fontSize ?? 28) * scale))
+  const scaledWidth = estimatedTextWidth(source.text ?? '', fontSize, source.fontFamily)
+  const scaledHeight = estimatedTextHeight(source.text ?? '', fontSize)
+  const nextX = handle.includes('w') ? right - scaledWidth : left
+  const nextY = handle.includes('n') ? bottom - scaledHeight : top
+  return {
+    x: Math.round(nextX),
+    y: Math.round(nextY),
+    w: Math.round(scaledWidth),
+    h: Math.round(scaledHeight),
+    fontSize,
+  }
+}
+
 function boxHandlePosition(annotation: Annotation, handle: Handle) {
   const left = annotation.x
   const right = annotation.x + annotation.w
@@ -160,6 +199,7 @@ export function CanvasStage({
 }: CanvasStageProps) {
   const { t } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
   const dragRef = useRef<DragState | null>(null)
   const [interaction, setInteraction] = useState<'idle' | 'pan' | 'move' | 'resize' | 'draw'>('idle')
   const [imageState, setImageState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -176,9 +216,13 @@ export function CanvasStage({
   )
   const singleSelected = selectedAnnotations.length === 1 ? selectedAnnotations[0] : null
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setImageState('loading')
-  }, [map.id])
+    const image = imageRef.current
+    if (image?.complete) {
+      setImageState(image.naturalWidth > 0 ? 'ready' : 'error')
+    }
+  }, [map.id, map.url])
 
   useEffect(() => {
     if (typeof document === 'undefined' || !('fonts' in document)) return
@@ -553,10 +597,14 @@ export function CanvasStage({
           annotation.id === source.id
             ? {
                 ...annotation,
-                x: Math.round(left),
-                y: Math.round(top),
-                w: Math.round(right - left),
-                h: Math.round(bottom - top),
+                ...(source.type === 'text'
+                  ? resizeTextAnnotation(source, drag.handle, left, top, right, bottom)
+                  : {
+                      x: Math.round(left),
+                      y: Math.round(top),
+                      w: Math.round(right - left),
+                      h: Math.round(bottom - top),
+                    }),
               }
             : annotation,
         ),
@@ -682,6 +730,7 @@ export function CanvasStage({
         }}
       >
         <img
+          ref={imageRef}
           className="map-image"
           src={map.url}
           alt=""
@@ -806,10 +855,11 @@ export function CanvasStage({
             const fontSize = annotation.fontSize ?? 28
             const font = mapFont(annotation.fontFamily)
             const bounds = textSize(annotation)
+            const originX = textOrigin(annotation, bounds.width)
             return (
               <g key={annotation.id} opacity={opacity} data-annotation={annotation.id}>
                 <text
-                  x={annotation.x}
+                  x={originX}
                   y={annotation.y + fontSize * 0.98}
                   fill={annotation.stroke}
                   stroke={textHalo(annotation.stroke)}
@@ -819,10 +869,11 @@ export function CanvasStage({
                   fontFamily={font.stack}
                   fontSize={fontSize}
                   fontWeight={font.weight}
+                  textAnchor={textAnchor(annotation)}
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                   {(annotation.text ?? '').split('\n').map((line, index) => (
-                    <tspan key={index} x={annotation.x} dy={index === 0 ? 0 : fontSize * 1.25}>
+                    <tspan key={index} x={originX} dy={index === 0 ? 0 : fontSize * 1.25}>
                       {line || ' '}
                     </tspan>
                   ))}
@@ -970,8 +1021,7 @@ function SelectionOverlay({ annotation, zoom }: { annotation: Annotation; zoom: 
     )
   }
 
-  const handles: Handle[] =
-    annotation.type === 'text' ? [] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
+  const handles: Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
 
   return (
     <g style={{ pointerEvents: 'none' }}>

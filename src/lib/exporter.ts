@@ -165,13 +165,20 @@ export async function exportPng(
       context.textBaseline = 'alphabetic'
       context.lineJoin = 'round'
       const lines = (annotation.text ?? '').split('\n')
+      context.textAlign = annotation.textAlign ?? 'left'
+      const textX =
+        annotation.textAlign === 'center'
+          ? annotation.x + estimatedTextWidth(annotation.text ?? '', fontSize, annotation.fontFamily) / 2
+          : annotation.textAlign === 'right'
+            ? annotation.x + estimatedTextWidth(annotation.text ?? '', fontSize, annotation.fontFamily)
+            : annotation.x
       lines.forEach((line, index) => {
         const baseline = annotation.y + fontSize * 0.98 + index * lineHeight
         context.strokeStyle = halo
         context.lineWidth = Math.max(2.5, fontSize * 0.12)
-        context.strokeText(line, annotation.x, baseline)
+        context.strokeText(line, textX, baseline)
         context.fillStyle = annotation.stroke
-        context.fillText(line, annotation.x, baseline)
+        context.fillText(line, textX, baseline)
       })
     }
 
@@ -309,15 +316,24 @@ export async function buildSvg(options: ExportOptions): Promise<string> {
       const halo = textHalo(annotation.stroke)
       const haloWidth = Math.max(2.5, fontSize * 0.12)
       const font = mapFont(annotation.fontFamily)
+      const textWidth = estimatedTextWidth(annotation.text ?? '', fontSize, annotation.fontFamily)
+      const textAnchor =
+        annotation.textAlign === 'center' ? 'middle' : annotation.textAlign === 'right' ? 'end' : 'start'
+      const textX =
+        annotation.textAlign === 'center'
+          ? annotation.x + textWidth / 2
+          : annotation.textAlign === 'right'
+            ? annotation.x + textWidth
+            : annotation.x
       const lines = (annotation.text ?? '').split('\n')
       const spans = lines
         .map(
           (line, index) =>
-            `<tspan x="${annotation.x}" y="${annotation.y + fontSize * 0.98 + index * lineHeight}">${escapeXml(line)}</tspan>`,
+            `<tspan x="${textX}" y="${annotation.y + fontSize * 0.98 + index * lineHeight}">${escapeXml(line)}</tspan>`,
         )
         .join('')
       parts.push(
-        `<text font-family="${escapeXml(font.stack)}" font-size="${fontSize}" font-weight="${font.weight}" fill="${annotation.stroke}" stroke="${halo}" stroke-width="${haloWidth}" stroke-linejoin="round" paint-order="stroke" ${opacity ? opacity.trim() : ''}>${spans}</text>`,
+        `<text text-anchor="${textAnchor}" font-family="${escapeXml(font.stack)}" font-size="${fontSize}" font-weight="${font.weight}" fill="${annotation.stroke}" stroke="${halo}" stroke-width="${haloWidth}" stroke-linejoin="round" paint-order="stroke" ${opacity ? opacity.trim() : ''}>${spans}</text>`,
       )
     }
   }

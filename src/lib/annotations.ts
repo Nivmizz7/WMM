@@ -45,6 +45,7 @@ export function createAnnotation(
     base.text = 'Nouveau texte'
     base.fontSize = 28
     base.fontFamily = style.fontFamily
+    base.textAlign = 'left'
     base.w = estimatedTextWidth(base.text, base.fontSize, base.fontFamily)
     base.h = estimatedTextHeight(base.text, base.fontSize)
   }

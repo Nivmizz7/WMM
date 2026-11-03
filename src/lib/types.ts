@@ -1,6 +1,7 @@
 export type AnnotationType = 'rect' | 'ellipse' | 'line' | 'arrow' | 'text'
 
-export type FontFamily = 'IBM Plex Sans' | 'Brunson' | 'IBM Plex Mono'
+export type FontFamily = 'IBM Plex Sans' | 'Brunson' | 'Impact' | 'IBM Plex Mono'
+export type TextAlign = 'left' | 'center' | 'right'
 
 export type Tool = 'select' | 'pan' | AnnotationType
 
@@ -20,6 +21,7 @@ export interface Annotation {
   text?: string
   fontSize?: number
   fontFamily?: FontFamily
+  textAlign?: TextAlign
 }
 
 export interface MapSummary {
